@@ -18,23 +18,6 @@ permission at the bare minimum. Secondly, Clone this repository (`git clone http
 then build the project (`cargo build --release`). Rename the `.env.example` file to `.env` and ensure its contents match
 your bot's token and associated guild ID if it is server specific.
 
-## Direct Database Modification
-
-> [!WARNING]
-> This section is for work-in-progress code, it may be outdated.
-
-> [!CAUTION]
-> This is unsupported and may break between updates.
-
-Bungus' database has the following structure:
-
-    Servers -> Channels -> Messages
-            |
-            |> Weights
-
-In the `weights` table for the associated `server` table you would like to modify, you can modify the weight of any word
-Bungus knows, or even add new words and link them to existing ones.
-
 <div align="center">
 <hr/>
 
