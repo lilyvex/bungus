@@ -1,4 +1,4 @@
-﻿use poise::serenity_prelude::{ChannelId, GuildId, MessageId};
+﻿use poise::serenity_prelude::{ChannelId, GuildChannel, GuildId, Http, MessageId};
 use poise::serenity_prelude::builder::GetMessages;
 
 use crate::Context;
@@ -15,10 +15,10 @@ pub struct BungusMessageChunk {
     messages: Vec<BungusMessage>,
 }
 
-async fn index_channels(ctx: Context<'_>) -> Result<(), BungusError> {
-    todo!();
+async fn index_channels(ctx: Context<'_>, server_id: GuildId) -> Result<Vec<GuildChannel>, BungusError> {
+    let http = Http::new(&std::env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN not set"));
 
-    Ok(())
+    Ok(http.get_channels(server_id).await?)
 }
 
 // TODO: Continue collecting message chunks and place them into an SQLite database.
