@@ -1,16 +1,17 @@
-﻿use poise::serenity_prelude::{ChannelId, MessageId};
+﻿use poise::serenity_prelude::{ChannelId, GuildId, MessageId};
 use poise::serenity_prelude::builder::GetMessages;
 
 use crate::Context;
 use crate::error::BungusError;
 
-struct BungusMessage {
-    id: MessageId,
-    channel_id: ChannelId,
-    content: String,
+pub struct BungusMessage {
+    pub id: MessageId,
+    pub server_id: GuildId,
+    pub channel_id: ChannelId,
+    pub content: String,
 }
 
-struct BungusMessageChunk {
+pub struct BungusMessageChunk {
     messages: Vec<BungusMessage>,
 }
 
@@ -30,6 +31,7 @@ async fn scan_channel_messages(ctx: Context<'_>, channel: ChannelId) -> Result<(
         message_chunk.messages.push(
             BungusMessage {
                 id: message.id,
+                server_id: ctx.guild_id().unwrap(),
                 channel_id: channel,
                 content: message.content
             }

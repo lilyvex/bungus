@@ -18,7 +18,13 @@ pub enum InternalError {
     SerenityError(#[from] poise::serenity_prelude::prelude::SerenityError),
 
     #[error(transparent)]
-    IntConversionError(#[from] std::num::ParseIntError)
+    IntConversionError(#[from] std::num::ParseIntError),
+
+    #[error(transparent)]
+    MigrationError(#[from] sqlx::migrate::MigrateError),
+
+    #[error(transparent)]
+    SqlxError(#[from] sqlx::Error),
 }
 
 #[derive(Error, Debug)]
@@ -36,7 +42,8 @@ macro_rules! def_error_conv {
     };
 }
 
-
 def_error_conv!(poise::serenity_prelude::prelude::SerenityError, BungusError, InternalError);
 def_error_conv!(std::num::ParseIntError, BungusError, InternalError);
 def_error_conv!(dotenv::Error, BungusError, InternalError);
+def_error_conv!(sqlx::migrate::MigrateError, BungusError, InternalError);
+def_error_conv!(sqlx::Error, BungusError, InternalError);
