@@ -12,8 +12,6 @@ use log::info;
 
 use crate::error::BungusError;
 
-use crate::commands::ping;
-
 struct Data {}
 type Context<'a> = poise::Context<'a, Data, BungusError>;
 
@@ -29,7 +27,10 @@ async fn main() -> Result<(), BungusError> {
     let intents = serenity::GatewayIntents::non_privileged() & serenity::GatewayIntents::GUILD_MESSAGES;
     let framework: poise::Framework<Data, BungusError> = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![ping::ping()],
+            commands: vec![
+                commands::ping::ping(),
+                commands::markov::markov()
+            ],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {

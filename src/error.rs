@@ -4,6 +4,9 @@
 pub enum BungusError {
     #[error(transparent)]
     InternalError(#[from] InternalError),
+
+    #[error(transparent)]
+    CommandError(#[from] CommandError),
 }
 
 #[derive(Error, Debug)]
@@ -21,10 +24,13 @@ pub enum InternalError {
     IntConversionError(#[from] std::num::ParseIntError),
 
     #[error(transparent)]
-    MigrationError(#[from] sqlx::migrate::MigrateError),
+    JsonError(#[from] serde_json::Error),
 
     #[error(transparent)]
-    SqlxError(#[from] sqlx::Error),
+    IoError(#[from] std::io::Error),
+
+    #[error("Token not found")]
+    TokenNotFound,
 }
 
 #[derive(Error, Debug)]
@@ -45,5 +51,5 @@ macro_rules! def_error_conv {
 def_error_conv!(poise::serenity_prelude::prelude::SerenityError, BungusError, InternalError);
 def_error_conv!(std::num::ParseIntError, BungusError, InternalError);
 def_error_conv!(dotenv::Error, BungusError, InternalError);
-def_error_conv!(sqlx::migrate::MigrateError, BungusError, InternalError);
-def_error_conv!(sqlx::Error, BungusError, InternalError);
+def_error_conv!(serde_json::error::Error, BungusError, InternalError);
+def_error_conv!(std::io::Error, BungusError, InternalError);
