@@ -1,7 +1,9 @@
 ﻿use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
+use tokio::sync::RwLock;
+use log::debug;
 use once_cell::sync::Lazy;
 use poise::serenity_prelude::{GetMessages, GuildChannel, GuildId, Http, Message};
 use rand::Rng;
@@ -37,31 +39,30 @@ impl BungusModel {
         }
     }
 
-    fn insert_words(&mut self, parent: &mut Token, words: &[&str]) {
+    pub fn insert_words(&mut self, words: &[&str]) {
+        Self::insert_words_rec(&mut self.token_tree, words, self.rng_weight_bias);
+    }
+    fn insert_words_rec(node: &mut Token, words: &[&str], rng_weight_bias: f32) {
+        debug!("Inserting words {:?}", words);
+
         if words.is_empty() {
-            parent.children.push(Token {
-                text: "~END".into(),
-                weight: 1,
-                bias: self.rng_weight_bias,
-                children: vec![],
-            });
             return;
         }
 
         let word = words[0];
-        if let Some(child) = parent.children.iter_mut().find(|c| c.text == word) {
+        if let Some(child) = node.children.iter_mut().find(|c| c.text == word) {
             child.weight += 1;
-            self.insert_words(child, &words[1..]);
+            Self::insert_words_rec(child, &words[1..], rng_weight_bias);
         } else {
-            parent.children.push(Token {
+            node.children.push(Token {
                 text: word.to_string(),
                 weight: 1,
-                bias: self.rng_weight_bias,
+                bias: rng_weight_bias,
                 children: vec![],
             });
-            let len = parent.children.len();
-            let child = &mut parent.children[len - 1];
-            self.insert_words(child, &words[1..]);
+            let len = node.children.len();
+            let child = &mut node.children[len - 1];
+            Self::insert_words_rec(child, &words[1..], rng_weight_bias);
         }
     }
 
@@ -91,12 +92,19 @@ impl BungusModel {
         Ok(http.get_channels(server_id).await?)
     }
 
-    pub async fn start(mut self) -> Result<(), BungusError> {
+    pub async fn start(&mut self) -> Result<(), BungusError> {
+        self.real_start().await?;
+        Ok(())
+    }
+
+    async fn real_start(&mut self) -> Result<(), BungusError> {
+        debug!("Start: read_main()");
+
         let brain = PathBuf::from(std::env::var("BRAIN_PATH").expect("BRAIN_PATH not set"));
-        let message_fetcher = GetMessages::new();
+        let message_fetcher = GetMessages::new().limit(10);
         let channels = Self::index_channels(GuildId::from(std::env::var("GUILD_ID").expect("GUILD_ID not set").parse::<u64>()?)).await?;
-        let mut messages: HashMap<u64, Vec<Message>> = HashMap::new();
-        let mut token_tree = if !brain.exists() {
+        //let mut messages: HashMap<u64, Vec<Message>> = HashMap::new();
+        self.token_tree = if !brain.exists() {
             let mut token_root = Token {
                 text: "~BEGIN".into(),
                 weight: 1,
@@ -104,29 +112,34 @@ impl BungusModel {
                 children: vec![]
             };
 
-            std::fs::write(&brain, token_root.json().await?)?;
+            tokio::fs::write(&brain, token_root.json().await?).await?;
 
             token_root
         } else {
-            Token::from_json(std::fs::read_to_string(&brain)?).await?
+            Token::from_json(tokio::fs::read_to_string(&brain).await?).await?
         };
 
         for channel in channels {
+            debug!("Indexing channel: {:#}", channel.name);
+
             let http = Http::new(&std::env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN not set"));
-            let channel_messages = channel.messages(http, message_fetcher).await?;
-            messages.insert(channel.id.get(), channel_messages.clone());
+            let channel_messages = channel.id.messages(http, message_fetcher).await?;
+            //messages.insert(channel.id.get(), channel_messages.clone());
 
             for message in channel_messages {
+                debug!("Parsing message: {:#}", message.content);
+
                 let words: Vec<&str> = message.content.split_whitespace().collect();
                 if words.is_empty() { continue; }
 
-                self.insert_words(&mut token_tree, &words);
+                self.insert_words(&words);
             }
         }
 
-        self.token_tree = token_tree;
+        tokio::fs::write(brain, self.token_tree.json().await?).await?;
 
-        std::fs::write(brain, self.token_tree.json().await?)?;
+        debug!("Initial tokens: {:?}", self.token_tree);
+
         Ok(())
     }
 
@@ -162,4 +175,3 @@ impl BungusModel {
         }
     }
 }
-

@@ -11,6 +11,7 @@ use poise::serenity_prelude::GuildId;
 use log::info;
 
 use crate::error::BungusError;
+use crate::markov::model::MODEL;
 
 struct Data {}
 type Context<'a> = poise::Context<'a, Data, BungusError>;
@@ -22,6 +23,9 @@ async fn main() -> Result<(), BungusError> {
 
     dotenv()?;
     info!("Environment initialized");
+
+    MODEL.write().await.start().await?;
+    info!("Initialized model");
 
     let token: String = std::env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN not set");
     let intents = serenity::GatewayIntents::non_privileged() & serenity::GatewayIntents::GUILD_MESSAGES;

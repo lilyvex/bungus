@@ -8,7 +8,7 @@ pub async fn markov(
     #[description = "Markov chain prompt"] prompt: String,
 ) -> Result<(), BungusError> {
     let output = {
-        let model = MODEL.read().unwrap();
+        let model = MODEL.read().await;
         model.generate()
     };
 
