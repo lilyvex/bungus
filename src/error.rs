@@ -28,9 +28,6 @@ pub enum InternalError {
 
     #[error(transparent)]
     IoError(#[from] std::io::Error),
-
-    #[error("Token not found")]
-    TokenNotFound,
 }
 
 #[derive(Error, Debug)]

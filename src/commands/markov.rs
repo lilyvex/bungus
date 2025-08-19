@@ -5,7 +5,7 @@ use crate::markov::model::MODEL;
 #[poise::command(slash_command, prefix_command)]
 pub async fn markov(
     ctx: Context<'_>,
-    #[description = "Markov chain prompt"] prompt: String,
+    #[description = "Markov chain prompt"] _prompt: String,
 ) -> Result<(), BungusError> {
     let output = {
         let model = MODEL.read().await;

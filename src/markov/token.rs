@@ -1,6 +1,6 @@
 ﻿use serde::{Deserialize, Serialize};
 
-use crate::error::{BungusError, InternalError};
+use crate::error::BungusError;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Token {
@@ -11,39 +11,6 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(text: String, weight: u64, bias: f32, children: Vec<Token>) -> Self {
-        Token {
-            text,
-            weight,
-            bias,
-            children
-        }
-    }
-
-    pub async fn search_by_text(&mut self, text: &str) -> Result<&mut Token, BungusError> {
-        Ok(Box::pin(async move {
-            if self.text == text {
-                return Ok(self);
-            }
-
-            for child in &mut self.children {
-                if let Ok(found) = child.search_by_text(text).await {
-                    return Ok(found);
-                }
-            }
-
-            return Err(BungusError::InternalError(InternalError::TokenNotFound))
-        }).await?)
-    }
-
-    pub fn add_to_children(&mut self, child: Token) {
-        self.children.push(child);
-    }
-
-    pub fn set_token_weight(&mut self, weight: u64) {
-        self.weight = weight;
-    }
-
     pub async fn json(&mut self) -> Result<String, BungusError> {
         Ok(serde_json::to_string(self)?)
     }

@@ -1,11 +1,10 @@
-﻿use std::collections::HashMap;
-use std::path::PathBuf;
+﻿use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
-use log::debug;
+use log::{debug, warn};
 use once_cell::sync::Lazy;
-use poise::serenity_prelude::{GetMessages, GuildChannel, GuildId, Http, Message};
+use poise::serenity_prelude::{GetMessages, GuildChannel, GuildId, Http};
 use rand::Rng;
 
 use crate::error::BungusError;
@@ -28,7 +27,7 @@ impl BungusModel {
 
         BungusModel {
             max_token_output,
-            total_tokens: usize::default(),
+            total_tokens: 1,
             rng_weight_bias: rng.random(),
             token_tree: Token {
                 text: "~BEGIN".into(),
@@ -98,12 +97,11 @@ impl BungusModel {
     }
 
     async fn real_start(&mut self) -> Result<(), BungusError> {
-        debug!("Start: read_main()");
+        debug!("Start: real_main()");
 
         let brain = PathBuf::from(std::env::var("BRAIN_PATH").expect("BRAIN_PATH not set"));
-        let message_fetcher = GetMessages::new().limit(10);
+        let message_fetcher = GetMessages::new().limit(100);
         let channels = Self::index_channels(GuildId::from(std::env::var("GUILD_ID").expect("GUILD_ID not set").parse::<u64>()?)).await?;
-        //let mut messages: HashMap<u64, Vec<Message>> = HashMap::new();
         self.token_tree = if !brain.exists() {
             let mut token_root = Token {
                 text: "~BEGIN".into(),
@@ -123,8 +121,14 @@ impl BungusModel {
             debug!("Indexing channel: {:#}", channel.name);
 
             let http = Http::new(&std::env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN not set"));
-            let channel_messages = channel.id.messages(http, message_fetcher).await?;
-            //messages.insert(channel.id.get(), channel_messages.clone());
+            let channel_messages = match channel.id.messages(http, message_fetcher).await {
+                Ok(msgs) => msgs,
+                Err(err) => {
+                    warn!("Failed to fetch messages for channel {}: {:?}", channel.name, err);
+                    continue;
+                }
+            };
+
 
             for message in channel_messages {
                 debug!("Parsing message: {:#}", message.content);
@@ -134,11 +138,11 @@ impl BungusModel {
 
                 self.insert_words(&words);
             }
+
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
 
         tokio::fs::write(brain, self.token_tree.json().await?).await?;
-
-        debug!("Initial tokens: {:?}", self.token_tree);
 
         Ok(())
     }
