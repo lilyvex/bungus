@@ -6,12 +6,12 @@ use crate::error::{BungusError, InternalError};
 pub struct Token {
     pub text: String,
     pub weight: u64,
-    pub bias: u64,
+    pub bias: f32,
     pub children: Vec<Token>
 }
 
 impl Token {
-    pub fn new(text: String, weight: u64, bias: u64, children: Vec<Token>) -> Self {
+    pub fn new(text: String, weight: u64, bias: f32, children: Vec<Token>) -> Self {
         Token {
             text,
             weight,
@@ -42,10 +42,6 @@ impl Token {
 
     pub fn set_token_weight(&mut self, weight: u64) {
         self.weight = weight;
-    }
-
-    pub fn generate_token_chain(&self) -> Vec<Token> {
-        vec![]
     }
 
     pub async fn json(&mut self) -> Result<String, BungusError> {

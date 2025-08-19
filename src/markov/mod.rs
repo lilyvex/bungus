@@ -1,3 +1,2 @@
-﻿mod scanner;
-mod token;
-mod model;
+﻿mod token;
+pub mod model;

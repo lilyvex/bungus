@@ -127,6 +127,7 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "log",
+ "once_cell",
  "poise",
  "pretty_env_logger",
  "rand 0.9.2",

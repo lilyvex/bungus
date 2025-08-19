@@ -1,11 +1,23 @@
 ﻿use crate::Context;
 use crate::error::BungusError;
+use crate::markov::model::MODEL;
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn markov(
     ctx: Context<'_>,
     #[description = "Markov chain prompt"] prompt: String,
 ) -> Result<(), BungusError> {
-    ctx.say("Markov functionality is under construction!").await?;
+    let output = {
+        let model = MODEL.read().unwrap();
+        model.generate()
+    };
+
+    if output.is_none() {
+        ctx.say("> Bungus couldn't think of what to say!").await?;
+
+        return Ok(());
+    }
+
+    ctx.say(output.unwrap()).await?;
     Ok(())
 }
