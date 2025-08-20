@@ -33,6 +33,7 @@ async fn main() -> Result<(), BungusError> {
         .options(poise::FrameworkOptions {
             commands: vec![
                 commands::ping::ping(),
+                commands::about::about(),
                 commands::markov::markov()
             ],
             ..Default::default()
